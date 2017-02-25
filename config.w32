@@ -1,0 +1,13 @@
+// $Id$
+// vim:ft=javascript
+
+// If your extension references something external, use ARG_WITH
+// ARG_WITH("datatype", "for datatype support", "no");
+
+// Otherwise, use ARG_ENABLE
+// ARG_ENABLE("datatype", "enable datatype support", "no");
+
+if (PHP_DATATYPE != "no") {
+	EXTENSION("datatype", "datatype.c");
+}
+
