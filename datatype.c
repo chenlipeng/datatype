@@ -91,6 +91,7 @@ PHP_MINIT_FUNCTION(datatype)
 	REGISTER_INI_ENTRIES();
 	*/
 
+	//datatype_array_pickup
 	//使用整个子数组作为提取后的值 默认
 	REGISTER_NULL_CONSTANT("PICKUP_VK_ENTIRE", CONST_CS | CONST_PERSISTENT);
 	//保留原来的Key 默认
@@ -177,8 +178,10 @@ zend_bool array_column_param_helper(zval **param,
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "The %s key should be either a string or an integer", name);
 			return 0;
 	}
-}
+}/*}}}*/
 
+/* {{{	datatype_array_pickup
+ * */
 PHP_FUNCTION(datatype_array_pickup) {
 	zval **zcolumn = NULL, **zkey = NULL, **data;
 	HashTable *arr_hash;
@@ -316,7 +319,49 @@ PHP_FUNCTION(datatype_array_pickup) {
 			}
 		}
 	}
-}
+}/*}}}*/
+
+/* {{{ zend_hash_apply_callback
+ * zend_hash_apply的回调函数 用于遍历一个数组 对其中的元素进行trim操作
+ * */
+int zend_hash_apply_callback(zval **val TSRMLS_CC) {
+	char *what = " ";
+	int what_len = strlen(what);
+	//进行trim操作 使用的方法为一个PHPAPI
+	php_trim(Z_STRVAL_PP(val), Z_STRLEN_PP(val), what, what_len, *val, 3 TSRMLS_CC);
+	return ZEND_HASH_APPLY_KEEP;
+}/*}}}*/
+
+/* {{{ datatype_array_fromCommaExp
+ * 从逗号表达式转换数组 可以选择对元素进行trim
+ * proto: public static function fromCommaExp($commaExp, $isTrim = TRUE)
+ * */
+PHP_FUNCTION(datatype_array_fromCommaExp) {
+	zend_bool is_trim = 1;
+	char *comma_exp;
+	long comma_exp_len;
+	zval zdelim, zstr;
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|b", &comma_exp, &comma_exp_len, &is_trim) == FAILURE) {
+		return;
+	}
+
+	array_init(return_value);
+	ZVAL_STRINGL(&zstr, comma_exp, comma_exp_len, 0);
+	ZVAL_STRINGL(&zdelim, ",", sizeof(",") - 1, 0);
+	php_explode(&zdelim, &zstr, return_value, LONG_MAX);
+
+	printf("%d\n", Z_TYPE_P(return_value));
+	if (is_trim) {
+		zend_hash_apply(Z_ARRVAL_P(return_value), zend_hash_apply_callback TSRMLS_CC);
+	}
+}/*}}}*/
+
+/* {{{ 检查一组元素全部都在另一组元素中出现
+ * proto: public static function isAllInclude($needle, $haystack, $strict = FALSE)
+ * */
+PHP_FUNCTION(datatype_array_isAllInclude) {
+
+}/*}}}*/
 
 /* {{{ datatype_functions[]
  *
@@ -325,6 +370,7 @@ PHP_FUNCTION(datatype_array_pickup) {
 const zend_function_entry datatype_functions[] = {
 	PHP_FE(confirm_datatype_compiled,	NULL)		/* For testing, remove later. */
 	PHP_FE(datatype_array_pickup,	NULL)
+	PHP_FE(datatype_array_fromCommaExp,	NULL)
 	PHP_FE_END	/* Must be the last line in datatype_functions[] */
 };
 /* }}} */
